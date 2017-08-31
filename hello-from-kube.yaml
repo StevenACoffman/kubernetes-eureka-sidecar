@@ -1,0 +1,57 @@
+eureka-apiVersion: v1
+kind: Service
+metadata:
+  name: hello-from-kube
+  labels:
+    run: hello-from-kube
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    run: hello-from-kube
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: hello-from-kube
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: hello-from-kube
+    spec:
+      containers:
+      - name: hello-from-kube
+        image: crccheck/hello-world
+        ports:
+        - containerPort: 8000
+      - name: eureka-kube-sidecar
+        image: playground/eureka-kube-sidecar:latest
+        ports:
+        - containerPort: 8888
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: APP_CONT_ID
+          value: "K8S"
+        - name: APP_NAME
+          value: "hello-from-kube"
+        - name: ENVIRONMENT
+          value: "test"
+        - name: DOMAIN
+          value: "example.com"
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
